@@ -478,5 +478,154 @@
           "pub fn main() void {"
           "pub const main: i32 = 1;"))
 
+(aho-jump-test-match csharp
+  :match ("public static void main(string[] args) {"
+          "public int main { get; set; }"
+          "public int main = 5;"
+          "public int main;"
+          "private async Task main() {"
+          "public static int main() => 1;"
+          "class main {}"
+          "interface main {}"
+          "struct main {}"
+          "enum main {}"
+          "record main(int x);"
+          "namespace main {"
+          "namespace Foo.main {")
+  :no-match ("if (main == 1)"
+             "public void main2() {}"
+             "class main2 {}"
+             "x = main(y);"
+             "main();"
+             "namespace main2 {"))
+
+(aho-jump-test-match dart
+  :match ("var main = 1;"
+          "final main = 1;"
+          "const main = 1;"
+          "void main() {"
+          "int main() {"
+          "String main() {"
+          "main() {"
+          "main(List<String> args) {"
+          "class main {}"
+          "abstract class main {}"
+          "enum main { a }"
+          "mixin main {}"
+          "extension main on String {}"
+          "typedef main = int Function();")
+  :no-match ("if (main == 1) {"
+             "var main2 = 1;"
+             "void main2() {}"
+             "main2() {}"
+             "x = main(y);"
+             "print(main);"))
+
+(aho-jump-test-match elixir
+  :match ("def main do"
+          "def main(x) do"
+          "defp main(x) do"
+          "defmodule main do"
+          "defmacro main(x)"
+          "defimpl main, for: Foo")
+  :no-match ("def main2(x) do"
+             "main(x)"
+             "if main == 1"))
+
+(aho-jump-test-match haskell
+  :match ("main :: IO ()"
+          "main = do"
+          "data main = Main"
+          "type main = Int"
+          "newtype main = Main Int"
+          "class main a where"
+          "instance main Int where"
+          "module main where")
+  :no-match ("main2 :: IO ()"
+             "x = main 1"
+             "import main"
+             "foo :: main -> Int"))
+
+(aho-jump-test-match julia
+  :match ("function main(x)"
+          "macro main(x)"
+          "struct main"
+          "mutable struct main"
+          "abstract type main end"
+          "primitive type main 8 end"
+          "const main = 1"
+          "module main"
+          "main = 1"
+          "main(x) = x + 1")
+  :no-match ("function main2(x)"
+             "if main == 1"
+             "main(x)"
+             "obj.main = 1"
+             "xmain = 1"))
+
+(aho-jump-test-match ocaml
+  :match ("let main = 1"
+          "let main x = x + 1"
+          "let rec main = 1"
+          "type main = int"
+          "module main = struct"
+          "class main = object"
+          "exception main of string"
+          "val main : int"
+          "method main = 1")
+  :no-match ("let main2 = 1"
+             "let x = main 1"
+             "type main2 = int"
+             "fun main -> main"))
+
+(aho-jump-test-match perl
+  :match ("my $main = 1;"
+          "my $main;"
+          "our $main = 1;"
+          "local $main;"
+          "$main = 1;"
+          "sub main { return 1 }"
+          "package main;"
+          "package Foo::main;")
+  :no-match ("print $main;"
+             "if ($main == 1) {"
+             "sub main2 {}"
+             "package main2;"
+             "# main = 1"))
+
+(aho-jump-test-match php
+  :match ("$main = 1;"
+          "function main($x) {"
+          "function &main() {"
+          "class main {"
+          "interface main {"
+          "trait main {"
+          "enum main {"
+          "public $main;"
+          "static $main;"
+          "const main = 1;")
+  :no-match ("if ($main == 1) {"
+             "echo $main;"
+             "obj->main = 1;"
+             "function main2() {}"
+             "class main2 {}"
+             "# main = 1"))
+
+(aho-jump-test-match ruby
+  :match ("main = 123"
+          "def main(x)"
+          "def self.main(x)"
+          "class main"
+          "class Foo::main < Bar"
+          "module main"
+          "module Foo::main")
+  :no-match ("if main == 123"
+             "obj.main = 1"
+             "def main2(x)"
+             "echo main"
+             "class main2"
+             "main2 = 1"
+             "# main = 1"))
+
 (provide 'aho-jump-test)
 ;;; aho-jump-test.el ends here

@@ -77,19 +77,28 @@
   '(((bash-ts-mode sh-mode) . sh)
     ((c-mode c-ts-mode) . c)
     ((c++-mode c++-ts-mode) . c++)
+    ((csharp-mode csharp-ts-mode) . csharp)
+    ((dart-mode dart-ts-mode) . dart)
     ((emacs-lisp-mode) . elisp)
+    ((elixir-mode elixir-ts-mode) . elixir)
     ((java-mode java-ts-mode) . java)
     ((just-mode just-ts-mode) . just)
+    ((julia-mode julia-ts-mode) . julia)
     ((kotlin-mode kotlin-ts-mode) . kotlin)
     ((go-mode go-ts-mode) . go)
+    ((haskell-mode haskell-ts-mode) . haskell)
     ((lean4-mode lean-ts-mode) . lean)
     ((lisp-mode) . lisp)
     ((lua-mode lua-ts-mode) . lua)
     ((makefile-mode) . makefile)
     ((markdown-mode markdown-ts-mode) . markdown)
     ((nix-mode nix-ts-mode) . nix)
+    ((caml-mode tuareg-mode ocaml-ts-mode neocaml-base-mode) . ocaml)
     ((org-mode) . org)
+    ((perl-mode perl-ts-mode) . perl)
+    ((php-mode php-ts-mode) . php)
     ((python-mode python-ts-mode) . python)
+    ((ruby-mode ruby-ts-mode enh-ruby-mode) . ruby)
     ((rust-ts-mode rust-mode) . rust)
     ((sml-mode sml-ts-mode) . sml)
     ((sql-mode sql-ts-mode) . sql)
@@ -121,11 +130,22 @@
          "using\\s+%i\\s*="              ; Type alias
          "namespace\\s+(?:\\w+::)*%i\\b" ; Namespace
          "(?:class|concept|enum\\s+(?:class|struct))\\s+%i\\b") ; Class, Concept, Enum class
+    (csharp nil
+            "\\bnamespace\\s+(?:[\\w.]+\\s*\\.\\s*)*%i\\b" ; Namespace
+            "(?:^|[;{}])\\s*(?:public|private|protected|internal)\\s+(?:(?:static|virtual|override|async|sealed|readonly|const)\\s+)*\\w+(?:<[^>]*>)?\\s+%i\\s*(?:[({=;]|$)" ; Method, Property, Field
+            "\\b(?:class|interface|struct|enum|record)\\s+%i\\b") ; Class, Interface, Struct, Enum, Record
+    (dart nil
+          "\\b(?:final|var|const|late)\\s+%i\\b" ; Variable
+          "\\b(?:void|int|double|num|bool|dynamic|[A-Z]\\w*)\\s+%i\\s*\\(" ; Typed function
+          "(?:^|[^\\s\\w\"'.=:({\\[#/`*-])\\s*%i\\s*\\([^)]*\\)\\s*(?:async\\s*)?\\{" ; Function, Method
+          "\\b(?:abstract\\s+)?(?:class|enum|mixin|extension|typedef)\\s+%i\\b") ; Class, Enum, Mixin, Extension, Typedef
     (lean nil
           "(?:abbrev|axiom|class|def|inductive|instance|lemma|opaque|structure|theorem)\\s+%i\\b") ; Definition
     (elisp nil
            "\\((?:cl-def[^ ]+|def[a-z-]+|setq)\\s+(?:\\(\\s*)?%i(?:$|[\\s)])" ; Variable, Class, Function, Mode
            "\\(def[a-z-]+\\s+'%i(?:$|[\\s)])") ; Quoted name (defalias, define-error, etc.)
+    (elixir nil
+            "\\bdef(?:p|macro|module|protocol|impl)?\\s+%i\\b") ; Function, Macro, Module, Protocol, Implementation
     (java nil
           "(?:^|[^\\s\"'.=:({\\[#/`*-])\\s*\\b%i\\s*=[^=]" ; Variable
           "(?:class|enum|interface|record)\\s+%i\\b" ; Class, Interface
@@ -133,6 +153,10 @@
     (just nil
           "\\b%i\\s*:="                 ; Variable
           "^%i\\b[^:_-]*:")             ; Recipe
+    (julia nil
+           "\\b(?:function|macro|module|const|struct)\\s+%i\\b" ; Function, Macro, Module, Constant, Struct
+           "\\b(?:abstract|primitive)\\s+type\\s+%i\\b" ; Abstract, Primitive type
+           "(?:^|[^\\s\\w\"'.=:({\\[#/`*-])\\s*%i\\s*(?:\\([^)]*\\))?\\s*=[^=]") ; Variable, Shorthand function
     (kotlin nil
             "(?:(?:^|[^\\s(])\\s*(?:val|var)|fun(?:\\s*<[^>]+>)?)\\s+(?:\\w+\\.\\s*)*%i\\b" ; Variable, Function
             "(?:typealias|class|interface|object)\\s+%i\\b") ; Type alias, Class, Interface, Object
@@ -141,6 +165,10 @@
         "type\\s+%i(?:\\[[^\\]]*\\])?\\s+(?:interface|struct\\b|=)" ; Type
         "^(?:var|const)\\s+%i\\b"            ; Declaration
         "func\\s+(?:\\([^)]+\\)\\s+)?%i\\b") ; Function
+    (haskell nil
+            "\\b%i\\s*::"               ; Type signature
+            "^%i\\s*=(?:[^=]|$)"        ; Binding
+            "\\b(?:data|newtype|type|class|instance|module)\\s+%i\\b") ; Data, Type, Class, Instance, Module
     (lisp nil
           "\\(def[^ ]+\\s+%i(?:$|[\\s)])") ; Variable, Function, Macro, etc
     (lua nil
@@ -155,8 +183,22 @@
     (nix nil
          "(?:^|[^\\s\\w\"'.=:(\\[#/`*-])\\s*%i\\s*=(?:$|[^=])" ; Variable
          "inherit\\s+(?:\\([^)]*\\)\\s+)?%i\\b") ; Inherit
+    (ocaml nil
+           "\\blet\\s+(?:rec\\s+)?%i\\b" ; Let
+           "\\b(?:type|module|class|exception|val|method|external)\\s+%i\\b") ; Type, Module, Class, Exception, Val, Method, External
     (org nil
          "^\\s*(?::CUSTOM_ID:\\s*%i\\b|#\\+(?i:name):\\s*%i\\b)") ; ID, Named block
+    (perl nil
+          "(?:^|[^\\s\\w\"'.=:({\\[#/`*-])\\s*\\$%i\\s*=[^=]" ; Variable
+          "\\b(?:my|our|local|state)\\s+\\$%i\\b" ; Declaration
+          "\\bsub\\s+%i\\b"                       ; Subroutine
+          "\\bpackage\\s+(?:\\w+::)*%i\\b")       ; Package
+    (php nil
+         "\\bconst\\s+%i\\b"                  ; Constant
+         "\\bfunction\\s+(?:&\\s*)?%i\\s*\\(" ; Function
+         "(?:^|[^\\s\\w\"'.=:({\\[#/`*>-])\\s*\\$%i\\s*=[^=]" ; Variable
+         "\\b(?:public|private|protected|var|static)\\s+\\$%i\\b" ; Property
+         "\\b(?:abstract\\s+)?(?:class|interface|trait|enum)\\s+%i\\b") ; Class, Interface, Trait, Enum
     (python nil
             "\\b%i\\s*:=[^=]"                             ; Walrus
             "\\(\\s*[^()\\[\\]]*%i\\b[^()\\[\\]]*\\)\\s*=[^=]" ; Tuple target
@@ -183,6 +225,9 @@
            "(?:typealias|class|enum|struct|protocol|actor)\\s+%i\\b") ; Type alias, Enum, Class, Struct, Actor
     (racket scheme
             "\\((?:class|struct)\\s+%i(?:$|[\\s)])") ; Class, Struct
+    (ruby nil
+          "(?:^|[^\\s\\w\"'.=:({\\[#/`*-])\\s*%i\\s*=[^=]" ; Variable
+          "\\b(?:def|class|module)\\s+(?:\\w+\\.\\s*|\\w+::)*%i\\b") ; Method, Class, Module
     (typst nil
            "#let\\s+%i[^-]"               ; Variable
            "(?:<%i>|#label\\(\"%i\"\\))") ; Label
@@ -259,13 +304,29 @@ which later is going to be replaced with the identifier name.")
   "Return the arguments for C++."
   (list "--type=cpp"))
 
+(cl-defmethod aho-jump-language-args ((_language (eql 'csharp)))
+  "Return the arguments for C#."
+  (list "--type=cs"))
+
+(cl-defmethod aho-jump-language-args ((_language (eql 'dart)))
+  "Return the arguments for Dart."
+  (list "--type=dart"))
+
 (cl-defmethod aho-jump-language-args ((_language (eql 'elisp)))
   "Return the arguments for Emacs Lisp."
   (list "--type=elisp"))
 
+(cl-defmethod aho-jump-language-args ((_language (eql 'elixir)))
+  "Return the arguments for Elixir."
+  (list "--type=elixir"))
+
 (cl-defmethod aho-jump-language-args ((_language (eql 'go)))
   "Return the arguments for Go."
   (list "--type=go"))
+
+(cl-defmethod aho-jump-language-args ((_language (eql 'haskell)))
+  "Return the arguments for Haskell."
+  (list "--type=haskell"))
 
 (cl-defmethod aho-jump-language-args ((_language (eql 'java)))
   "Return the arguments for Java."
@@ -274,6 +335,10 @@ which later is going to be replaced with the identifier name.")
 (cl-defmethod aho-jump-language-args ((_language (eql 'just)))
   "Return the arguments for Just."
   (list "--type-add=just:*.just" "--type-add=just:[Jj]ustfile" "--type=just"))
+
+(cl-defmethod aho-jump-language-args ((_language (eql 'julia)))
+  "Return the arguments for Julia."
+  (list "--type=julia"))
 
 (cl-defmethod aho-jump-language-args ((_language (eql 'kotlin)))
   "Return the arguments for Kotlin."
@@ -303,13 +368,29 @@ which later is going to be replaced with the identifier name.")
   "Return the arguments for Nix."
   (list "--type=nix"))
 
+(cl-defmethod aho-jump-language-args ((_language (eql 'ocaml)))
+  "Return the arguments for OCaml."
+  (list "--type=ocaml"))
+
 (cl-defmethod aho-jump-language-args ((_language (eql 'org)))
   "Return the arguments for Org mode."
   (list "--type=org"))
 
+(cl-defmethod aho-jump-language-args ((_language (eql 'perl)))
+  "Return the arguments for Perl."
+  (list "--type=perl"))
+
+(cl-defmethod aho-jump-language-args ((_language (eql 'php)))
+  "Return the arguments for PHP."
+  (list "--type=php"))
+
 (cl-defmethod aho-jump-language-args ((_language (eql 'python)))
   "Return the arguments for Python."
   (list "--type=python"))
+
+(cl-defmethod aho-jump-language-args ((_language (eql 'ruby)))
+  "Return the arguments for Ruby."
+  (list "--type=ruby"))
 
 (cl-defmethod aho-jump-language-args ((_language (eql 'rust)))
   "Return the arguments for Rust."
