@@ -102,104 +102,99 @@
 
 (defvar aho-jump-regexp-alist
   '((sh nil
-        "\\b%i=[^=]"                    ; Variable
-        "\\b%i\\s*\\(")                 ; Function
+        "(?:^|[^\\s\\w\"'.=:(\\[#/`*-])\\s*%i=[^=]"   ; Variable
+        "(?:^|[^\\s\\w\"'.=:(\\[#/`*-])\\s*%i\\s*\\(" ; Function
+        "^\\s*function\\s+%i\\b"        ; Brace-style function
+        "(?:^|[^\\s\\w\"'.=:(\\[#/`*-])\\s*(?:local|declare|typeset|readonly|export)\\s+(?:-\\w+\\s+)*%i(?:[= ]|$)") ; Declaration
     (c nil
-       "\\b%i\\s*=[^=]"                                  ; Variable
-       "^\\s*#define\\s+%i\\b"                           ; Directive
-       "(^|[_[:alnum:]]+\\s+(\\*\\s*)?)\\b%i\\s*\\("     ; Function
-       "(struct|enum|union)\\s+%i\\s+\\{"                ; Enum, Union
-       "typedef\\s+(\\w|[(*]|\\s)+%i(\\)|\\s)*\\(")      ; Struct
+       "^[^(]*[^.\\s=:(\\[#/\"'\\`>*-]\\s*\\b%i\\s*=[^=]" ; Variable
+       "^\\s*#define\\s+%i\\b"                            ; Directive
+       "\\*%i\\s*\\)\\s*\\([^)]*\\)(?:$|[^,)])" ; Function pointer
+       "^\\s*%i\\s*\\([^)]*\\)\\s*\\{"          ; Bare function
+       "(?:^|[;{}>])\\s*(?:\\w[\\w:<>]*\\**\\s+)+\\**\\s*(?:\\w+::)*%i\\s*\\(" ; Typed function
+       "(?:struct|enum|union)\\s+%i(?:\\s+(?:__\\w+\\s*\\([^;]*\\)[^;{]*|final))?(?:\\s*:\\s*[^;{]*)?\\s*\\{" ; Enum, Union, Struct
+       "^\\s*(?:(?:auto|const|extern|inline|register|restrict|static|volatile|thread_local|constexpr|mutable|unsigned|signed|short|long|char|int|float|double|void|struct|enum|union|typedef)\\b\\s*)*(?:(?:auto|const|extern|inline|register|restrict|static|volatile|thread_local|constexpr|mutable|unsigned|signed|short|long|char|int|float|double|void|struct|enum|union|typedef)\\b|[A-Z_]\\w*|\\w+_t|\\w+(?:::\\w+)+(?:<[^;]*>)?)\\s+[\\w*\\s]*\\b%i\\s*[\\[,;=]") ; Declaration
     (c++ c
-         "class\\s+%i\\b")              ; Class
+         "using\\s+%i\\s*="              ; Type alias
+         "namespace\\s+(?:\\w+::)*%i\\b" ; Namespace
+         "(?:class|concept|enum\\s+(?:class|struct))\\s+%i\\b") ; Class, Concept, Enum class
     (lean nil
-          "(class|def|inductive|theorem)\\s+%i\\b") ; Definition
+          "(?:abbrev|axiom|class|def|inductive|instance|lemma|opaque|structure|theorem)\\s+%i\\b") ; Definition
     (elisp nil
-           "\\\(cl-def[^ ]+\\s+%i($|[^[:punct:]])" ; Struct, Type, etc
-           "\\\((defclass|defcustom|defun|defmacro|defvar|setq)\\s+%i($|[^[:punct:]])") ; Variable, Class, Function
+           "\\((?:cl-def[^ ]+|def[a-z-]+|setq)\\s+(?:\\(\\s*)?%i(?:$|[\\s)])" ; Variable, Class, Function, Mode
+           "\\(def[a-z-]+\\s+'%i(?:$|[\\s)])") ; Quoted name (defalias, define-error, etc.)
     (java nil
-          "\\b%i\\s*=[^=]+"                         ; Variable
-          "(class|enum|interface|record)\\s+%i\\b"  ; Class, Interface
-          "^\\s*([\\w\\[\\]]+\\s+){1,3}%i\\s*\\\(") ; Method
+          "(?:^|[^\\s\"'.=:({\\[#/`*-])\\s*\\b%i\\s*=[^=]" ; Variable
+          "(?:class|enum|interface|record)\\s+%i\\b" ; Class, Interface
+          "(?:\\w[\\w\\[\\]<>,.]*\\s+)+%i\\s*\\(")   ; Method
     (just nil
           "\\b%i\\s*:="                 ; Variable
-          "^%i[^:_-]*:")                ; Recipe
+          "^%i\\b[^:_-]*:")             ; Recipe
     (kotlin nil
-            "(val|var)\\s+%i\\b"                 ; Variable
-            "fun\\s+(<[^>]+>\\s+)?%i\\b"         ; Function
-            "typealias\\s+%i\\b"                 ; Type alias
-            "(class|interface|object)\\s+%i\\b") ; Class, Interface, Object
+            "(?:(?:^|[^\\s(])\\s*(?:val|var)|fun(?:\\s*<[^>]+>)?)\\s+(?:\\w+\\.\\s*)*%i\\b" ; Variable, Function
+            "(?:typealias|class|interface|object)\\s+%i\\b") ; Type alias, Class, Interface, Object
     (go nil
-        "\\b%i\\s+(\\w+\\s+)?=[^=]" "\\b%i\\s*:=" ; Variable
-        "type\\s+%i\\s+(interface|struct)" ; Type
-        "func\\s+%i\\b" "func\\s+\\\([^\\\)]+\\\)\\s+%i\\b") ; Function
+        "(?:^|[^\\s\"'.=:({\\[#/`*-])\\s*\\b%i\\b\\s*(?::=|\\w*\\s*=[^=])" ; Variable
+        "type\\s+%i(?:\\[[^\\]]*\\])?\\s+(?:interface|struct\\b|=)" ; Type
+        "^(?:var|const)\\s+%i\\b"            ; Declaration
+        "func\\s+(?:\\([^)]+\\)\\s+)?%i\\b") ; Function
     (lisp nil
-          "\\\(def[^ ]+\\s+%i($|[^[:punct:]])") ; Variable, Function, Macro, etc
+          "\\(def[^ ]+\\s+%i(?:$|[\\s)])") ; Variable, Function, Macro, etc
     (lua nil
-         "\\b%i\\s*=[^=]"               ; Variable
-         "function\\s+%i\\s*\\\(")      ; Function
+         "(?:^|[^\\s\"'.=:({\\[#/`*-])\\s*\\b%i\\s*=[^=]"  ; Variable
+         "function\\s+(?:[\\w.:]+\\s*[.:]\\s*)?%i\\s*\\(") ; Function
     (makefile nil
-              "^\\s*%i:"                ; Target
-              "^\\s*%i\\s*[!+:?]?=")    ; Variable
+              "^\\s*define\\s+%i\\b"    ; Define
+              "^\\s*(?:(?:export|override)\\s+)?%i\\s*(?:[!+:?]?=|:)") ; Target, Variable
     (markdown nil
-              "\\bid\\s*=\\s*\"%i\""    ; ID
-              "^\\[\\^%i\\]:"           ; Footnote
-              "\\{#%i\\}")              ; Heading ID
+              "^\\[(?:\\^%i|%i)\\]:"    ; Footnote, reference link
+              "(?:\\bid\\s*=\\s*\"%i\"|\\{#%i\\})") ; ID, Heading ID
     (nix nil
-         "\\s%i\\s*=($|[^=])")          ; Variable
+         "(?:^|[^\\s\\w\"'.=:(\\[#/`*-])\\s*%i\\s*=(?:$|[^=])" ; Variable
+         "inherit\\s+(?:\\([^)]*\\)\\s+)?%i\\b") ; Inherit
     (org nil
-         "^\\s*:CUSTOM_ID:\\s*%i\\b"            ; ID
-         "^\\s*#\\+(?i)name(?-i):\\s*%i\\b") ; Named block
+         "^\\s*(?::CUSTOM_ID:\\s*%i\\b|#\\+(?i:name):\\s*%i\\b)") ; ID, Named block
     (python nil
-            "\\b%i\\b[^=]*[:=][^=]"      ; Variable
-            "def\\s+%i\\b\\s*\\\("       ; Function
-            "class\\s+%i\\b\\s*[:\\\(]") ; Class
+            "\\b%i\\s*:=[^=]"                             ; Walrus
+            "\\(\\s*[^()\\[\\]]*%i\\b[^()\\[\\]]*\\)\\s*=[^=]" ; Tuple target
+            "(?:^|;)\\s*(?:[^()\\[\\]{\"'.=:,#/`*-]*,\\s*)+%i\\b[^.=:(\\[]*=[^=]" ; Tuple target, bare
+            "(?:^|[^\\s\\w\"'.=:({\\[#/`*,-])\\s*%i\\b[^.=:(\\[]*=[^=]" ; Variable
+            "(?:^|[^\\s\\w\"'.=:({\\[#/`*,-])\\s*%i\\s*:[^=].*[^,\\s]\\s*$" ; Annotation
+            "(?:def|class)\\s+%i(?:\\[[^\\]]*\\])?\\s*[:(]") ; Function, Class
     (rust nil
-          "const\\s+%i\\b"                         ; Constant
-          "static\\s+(mut\s+)?%i\\b"               ; Static
-          "let\\s+(.+)?(mut\s+)?%i\\b(.+)="        ; Variable
-          "fn\\s+%i\\b"                            ; Function
-          "impl\\s+(.+)?%i\\b"                     ; Implementation
-          "macro_rules!\\s+%i\\b"                  ; Macro
-          "(enum|mod|struct|trait|type)\\s+%i\\b") ; Enum, Trait, etc
+          "impl\\s+[^{;]*%i\\b"                   ; Implementation
+          "let\\s+[^=:]*\\b%i\\b[^=]*="           ; Variable
+          "(?:const|static(?:\\s+mut)?)\\s+%i\\b" ; Constant, Static
+          "(?:fn|enum|mod|struct|trait|type|union|macro_rules!)\\s+%i\\b") ; Function, Enum, Trait, etc
     (sml nil
-         "(fun|val)\\s+%i(\\s|\\()"                     ; Function
-         "^\\s*(functor|funsig)\\s+%i\\s*\\("           ; Functor
-         "^\\s*exception\\s+%i(\\s|$)"                  ; Signature
-         "^\\s*(datatype|abstype)(\\s+'\\w+)?\\s+%i\\b" ; Datatype
-         "^\\s*signature\\s+%i\\s+="                    ; Signature
-         "^\\s*structure\\s+%i\\s+[=:]")                ; Structure
+         "(?:fun|val)\\s+(?:rec\\s+)?%i[\\s(]" ; Function, Value
+         "\\b(?:exception|functor|funsig|signature|structure|datatype|abstype|type)(?:\\s+'\\w+)?\\s+%i\\b") ; Functor, Exception, Datatype, Signature, Structure, Type
     (sql nil
-         "(?i)create\\s+table(\\s+if\\s+not\\s+exists)?(?-i)\\s+%i\\b" ; Table
-         "(?i)create\\s+(or\\s+replace\\s+)?(function|type|procedure|view)(?-i)\\s+%i\\b") ; Function, Type, View
+         "(?i:create\\s+table(?:\\s+if\\s+not\\s+exists)?)\\s+(?:[\\w.]+\\s*\\.\\s*)?%i\\b" ; Table
+         "(?i:create\\s+(?:or\\s+replace\\s+)?(?:function|type|procedure|view|index|trigger|sequence|materialized\\s+view))\\s+(?:[\\w.]+\\s*\\.\\s*)?%i\\b") ; Function, Type, View
     (scheme nil
-            "\\\(define[^ ]*\\s+%i($|[^[:punct:]])" ; Variable, Macro
-            "\\\(define[^ ]*\\s+\\(\\s*%i($|\\\)|[^[:punct:]])") ; Function
+            "\\(define[^ ]*\\s+(?:\\(\\s*)?%i(?:$|[\\s)])") ; Variable, Macro, Function
     (swift nil
-           "(let|var)\\s+%i\\b"                     ; Variable
-           "func\\s+%i\\b"                          ; Function
-           "typealias\\s+%i\\b"                     ; Function
-           "(class|enum|struct|protocol)\\s+%i\\b") ; Enum, Class, Struct
+           "(?:let|var)\\s+%i\\b"          ; Variable
+           "func\\s+(?:\\w+\\.\\s*)*%i\\b" ; Function
+           "(?:typealias|class|enum|struct|protocol|actor)\\s+%i\\b") ; Type alias, Enum, Class, Struct, Actor
     (racket scheme
-            "\\\((class|struct)\\s+%i($|[^[:punct:]])") ; Class, Struct
+            "\\((?:class|struct)\\s+%i(?:$|[\\s)])") ; Class, Struct
     (typst nil
-           "<%i>" "#label\\\(\"%i\"\\\)" ; Label
-           "#let\s+%i(\\\(|[^-])")       ; Variable
+           "#let\\s+%i[^-]"               ; Variable
+           "(?:<%i>|#label\\(\"%i\"\\))") ; Label
     (terraform nil
-               "^%i\\s*="                                 ; tfvars
-               "(variable|module|output)\\s+\"%i\""       ; Variable
-               "(data|resource|ephemeral)\\s+\"[^\"]+\"\\s+\"%i\"") ; Data
+               "(?:^%i\\s*=|(?:variable|module|output)\\s+\"%i\")" ; tfvars, Variable
+               "(?:data|resource|ephemeral)\\s+\"[^\"]+\"\\s+\"%i\"") ; Data
     (javascript nil
-                "(const|let|var)\\s+%i\\b"                ; Variable
-                "(async|function)\\s+%i\\s*\\\("          ; Function
-                "\\b%i\\s*[=:]\\s*\\\([^\\\)]*\\\)\\s+=>" ; Arrow Function
-                "class\\s+%i\\b")                         ; Class
+                "(?:const|let|var|class)\\s+%i\\b" ; Variable, Class
+                "(?:function\\*?|async)\\s+%i\\s*\\(" ; Function
+                "(?:^|[^\\s\\w\"'.=:(\\[#/`*-])\\s*%i\\s*\\([^)]*\\)\\s*\\{" ; Method
+                "(?:^|[^\\s\\w\"'\\`=:(\\[/-])\\s*%i\\s*[=:]\\s*(?:async\\s+)?\\([^\\\\)]*\\)\\s+=>") ; Arrow Function
     (typescript javascript
-                "type\\s+%i\\b"         ; Type
-                "interface\\s+%i\\b")   ; Interface
+                "(?:type|interface|enum|namespace)\\s+%i\\b(?:$|\\s*(?:[={<]|extends\\b|implements\\b))") ; Type, Interface, Enum, Namespace
     (zig nil
-         "(const|var)\\s+%i\\b"         ; Variable
-         "fn\\s+%i\\b"))                ; Function
+         "(?:const|var|fn)\\s+%i\\b"))  ; Variable, Function
   "Alist of languages with its identifier regexes.
 
 An entry should be of the form:
