@@ -355,6 +355,25 @@ which later is going to be replaced with the identifier name.")
   "Return the arguments for Zig."
   (list "--type=zig"))
 
+(cl-defgeneric aho-jump-xref-exclude-regexp (language identifier)
+  "Return a regexp to match lines to exclude for LANGUAGE and IDENTIFIER.")
+
+(cl-defmethod aho-jump-xref-exclude-regexp (_language _identifier)
+  "By default no match is excluded."
+  nil)
+
+(cl-defmethod aho-jump-xref-exclude-regexp ((_language (eql 'c)) identifier)
+  "Regexp to exclude C expression keywords followed by IDENTIFIER."
+  (concat "\\b\\(?:alignof\\|goto\\|return\\|sizeof\\|typeof\\|_Alignof\\)[ \t]+" identifier))
+
+(cl-defmethod aho-jump-xref-exclude-regexp ((_language (eql 'c++)) identifier)
+  "Regexp to exclude C++ expression keywords followed by IDENTIFIER."
+  (concat "\\b\\(?:alignof\\|co_return\\|delete\\|goto\\|return\\|sizeof\\|throw\\|typeof\\)[ \t]+" identifier))
+
+(cl-defmethod aho-jump-xref-exclude-regexp ((_language (eql 'java)) identifier)
+  "Regexp to exclude Java expression keywords followed by IDENTIFIER."
+  (concat "\\b\\(?:return\\|throw\\)[ \t]+" identifier))
+
 (cl-defmethod xref-backend-definitions ((_backend (eql aho-jump)) identifier)
   "Find definitions of IDENTIFIER."
   (unless (executable-find aho-jump-rg-executable)
@@ -372,11 +391,13 @@ which later is going to be replaced with the identifier name.")
          (goto-char (point-min))
          (cl-loop while (re-search-forward "^\\([^: \n\t]+\\):\\([0-9]+\\):\\([0-9]+\\):\\(.+\\)$" nil t)
                   with ident-re = (format "\\<%s\\>" (regexp-quote identifier))
+                  with exclude-re = (aho-jump-xref-exclude-regexp language ident-re)
                   for file = (match-string 1)
                   for line = (string-to-number (match-string 2))
                   for summary = (match-string 4)
-                  for column = (or (string-match-p ident-re summary) (string-to-number (match-string 3)))
+                  for column = (or (string-match-p ident-re summary) (1- (string-to-number (match-string 3))))
                   for location = (xref-make-file-location (expand-file-name file) line column)
+                  unless (and exclude-re (string-match-p exclude-re summary))
                   collect (xref-make-match summary location (length identifier))))
         (status
          (goto-char (point-min))
