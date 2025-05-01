@@ -67,8 +67,11 @@
 
 (defcustom aho-jump-rg-executable "rg"
   "Path to ripgrep (rg) executable."
-  :type '(file :must-match t)
-  :group 'aho-jump)
+  :type '(string :tag "Ripgrep executable"))
+
+(defcustom aho-jump-summary-max-length 80
+  "Maximum length for match summary to display."
+  :type '(choice (const :tag "No limit" nil) (natnum :tag "Maximum length")))
 
 (defvar aho-jump-languages
   '(((bash-ts-mode sh-mode) . sh)
@@ -207,27 +210,39 @@ which regexes can be inherited.  REGEXES hold the patterns to match when
 looking for a identifier.  Each REGEX must have the specification `%i'
 which later is going to be replaced with the identifier name.")
 
-(defvar aho-jump-rg-default-args '("--case-sensitive" "--column" "--color=never" "--no-heading" "--no-messages" "--line-number" "--max-columns=80" "--max-columns-preview")
+(defvar aho-jump-rg-default-args '("--case-sensitive" "--column" "--color=never" "--no-heading" "--no-messages" "--line-number")
   "Default arguments passed to ripgrep.")
 
 (defun aho-jump-mode-language (&optional mode)
   "Return the supported language associated to major MODE."
   (alist-get (or mode major-mode) aho-jump-languages nil nil (lambda (modes needle) (provided-mode-derived-p needle modes))))
 
+(defun aho-jump-regexp-alist-regexes (language)
+  "Return the identifier regexes for LANGUAGE, including inherited parents."
+  (named-let walk ((language language)
+                   (seen (list language)))
+    (pcase (assq language aho-jump-regexp-alist)
+      (`(,_ ,parent . ,regexps)
+       (if (memq parent seen)
+           (user-error "Cyclic parent in `aho-jump-regexp-alist': %S" parent)
+         (append (walk parent (cons parent seen)) regexps)))
+      (_ nil))))
+
 (defun aho-jump-regexp-args (identifier regexes)
   "Build the IDENTIFIER with REGEXES patterns."
   (cl-loop for regexp in regexes
            collect "--regexp"
-           collect (format-spec regexp `((?i . ,identifier)))))
+           collect (format-spec regexp `((?i . ,(regexp-quote identifier))))))
 
 (defun aho-jump-command-args (identifier language)
-  "Execute the ripgrep command for IDENTIFIER and LANGUAGE."
-  (pcase-let*
-      ((`(,parent . ,regexes) (alist-get language aho-jump-regexp-alist))
-       (regexes (append (cdr (alist-get parent aho-jump-regexp-alist)) regexes)))
-    (append aho-jump-rg-default-args
-            (aho-jump-regexp-args identifier regexes)
-            (aho-jump-language-args language))))
+  "Return the ripgrep arguments for IDENTIFIER and LANGUAGE."
+  (if-let* ((regexes (aho-jump-regexp-alist-regexes language)))
+      (append aho-jump-rg-default-args
+              (and aho-jump-summary-max-length
+                   (list (format "--max-columns=%d" aho-jump-summary-max-length) "--max-columns-preview"))
+              (aho-jump-regexp-args identifier regexes)
+              (aho-jump-language-args language))
+    (user-error "No regexps defined for language `%S' in `aho-jump-regexp-alist'" language)))
 
 (cl-defgeneric aho-jump-language-args (language)
   "Return the arguments for LANGUAGE.")
@@ -342,6 +357,8 @@ which later is going to be replaced with the identifier name.")
 
 (cl-defmethod xref-backend-definitions ((_backend (eql aho-jump)) identifier)
   "Find definitions of IDENTIFIER."
+  (unless (executable-find aho-jump-rg-executable)
+    (user-error "Cannot find the ripgrep executable `%s'.  Adjust `aho-jump-rg-executable' if it is not on `exec-path'" aho-jump-rg-executable))
   (let* ((process-file-side-effects)
          (language (aho-jump-mode-language major-mode))
          (args (aho-jump-command-args identifier language))
